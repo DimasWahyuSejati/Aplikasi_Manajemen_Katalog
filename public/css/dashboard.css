@@ -1,0 +1,115 @@
+
+
+body { 
+    background-color: #1e3a8a; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    overflow: hidden; 
+}
+
+#wrapper { 
+    display: flex; 
+    height: 100vh; 
+    padding: 20px 0 20px 20px; 
+}
+
+#sidebar { 
+    width: 260px;
+    flex-shrink: 0; 
+    display: flex; 
+    flex-direction: column; 
+    color: white; 
+    position: relative;
+    z-index: 10; 
+}
+
+.sidebar-header { 
+    padding: 10px 20px 30px 20px; 
+    font-size: 1.5rem; 
+    font-weight: 800; 
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-menu { 
+    list-style: none; 
+    padding: 0; 
+    margin: 0; 
+}
+
+.sidebar-menu li {
+    margin-bottom: 5px;
+}
+
+.sidebar-menu li a { 
+    display: flex; 
+    align-items: center;
+    padding: 15px 20px; 
+    color: #93c5fd; 
+    text-decoration: none; 
+    border-radius: 30px 0 0 30px; 
+    font-weight: 600;
+    transition: 0.3s; 
+    position: relative;
+}
+
+.sidebar-menu li a:hover { 
+    color: white; 
+}
+
+.sidebar-menu li a.active { 
+    background-color: #f4f6f9; 
+    color: #1e3a8a; 
+    font-weight: 700;
+    margin-right: -15px; 
+    padding-right: 35px; 
+    z-index: 11;
+}
+
+
+#content-area { 
+    flex-grow: 1; 
+    background-color: #f4f6f9; 
+    border-radius: 35px 0 0 35px; 
+    display: flex; 
+    flex-direction: column; 
+    overflow-y: auto; 
+    position: relative;
+    z-index: 5;
+    box-shadow: -5px 0 25px rgba(0,0,0,0.1); 
+}
+
+
+.top-navbar { 
+    padding: 25px 40px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+.dashboard-content { 
+    padding: 0 40px 40px 40px; 
+}
+
+
+.card {
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
+}
+
+.card-header {
+    background-color: white !important;
+    border-bottom: none !important;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 20px 20px 15px 20px !important;
+}
+
+.table {
+    margin-bottom: 0;
+}
+.table > :not(caption) > * > * {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
