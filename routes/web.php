@@ -26,6 +26,10 @@ Route::get('/katalog', function () {
     return view('katalog');
 });
 
+Route::get('/laporan-penjualan', function () {
+    return view('laporan-penjualan');
+});
+
 Route::get('/detail-produk/{id}', function ($id) {
     // SIMULASI DATA DARI DATABASE (Nantinya ini diganti dengan pemanggilan Model/Database sungguhan)
     $produk = (object) [
