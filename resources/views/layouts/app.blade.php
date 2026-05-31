@@ -33,6 +33,11 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ url('/merek') }}" class="{{ request()->is('merek') ? 'active' : '' }}">
+                        <i class="fa-solid fa-copyright me-3"></i> Manajemen Merek
+                    </a>
+                </li>
+                <li>
                     <a href="#">
                         <i class="fa-solid fa-chart-simple me-3"></i> Laporan Penjualan
                     </a>
@@ -46,7 +51,7 @@
                 <div class="d-flex align-items-center">
                     <img src="https://ui-avatars.com/api/?name=Admin&background=1e3a8a&color=fff" alt="User" class="rounded-circle me-2" width="35">
                     <span class="fw-bold me-4 text-dark">Halo, Admin!</span>
-                    <a href="{{ url('/') }}" class="text-danger text-decoration-none fw-bold">
+                    <a href="#" onclick="logout(); return false;" class="text-danger text-decoration-none fw-bold">
                         <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
                     </a>
                 </div>
@@ -63,6 +68,49 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('js/script.js?v=' . time()) }}"></script>
+    
+    <script>
+        // Auth Check
+        const token = localStorage.getItem('token');
+        const currentPath = window.location.pathname;
+        
+        if (!token && currentPath !== '/' && currentPath !== '/login') {
+            window.location.href = "{{ url('/') }}"; // Redirect to login
+        }
+
+        // Set username in navbar if exists
+        const username = localStorage.getItem('username');
+        if (username) {
+            const userElements = document.querySelectorAll('.fw-bold.me-4.text-dark');
+            userElements.forEach(el => el.innerText = 'Halo, ' + username + '!');
+        }
+
+        // Logout logic
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            window.location.href = "{{ url('/') }}";
+        }
+
+        // Helper function for API calls with token
+        window.fetchWithAuth = function(url, options = {}) {
+            const headers = new Headers(options.headers || {});
+            headers.append('Authorization', 'Bearer ' + token);
+            headers.append('Content-Type', 'application/json');
+            
+            return fetch(url, {
+                ...options,
+                headers: headers
+            }).then(response => {
+                if (response.status === 401) {
+                    logout(); // Token expired or invalid
+                    throw new Error('Sesi berakhir, silakan login kembali.');
+                }
+                return response;
+            });
+        };
+    </script>
+    
     @yield('scripts')
 
 </body>

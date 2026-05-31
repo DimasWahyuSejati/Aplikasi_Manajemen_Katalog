@@ -17,24 +17,65 @@
             <p class="text-muted">Manajemen Katalog Toko Sepatu</p>
         </div>
         
-        <form action="{{ url('/dashboard') }}" method="GET">
+        <form id="form-login">
             <div class="mb-3">
                 <label class="form-label fw-bold">Username</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
-                    <input type="text" class="form-control" placeholder="admin" required>
+                    <input type="text" id="username" class="form-control" placeholder="admin" required>
                 </div>
             </div>
             <div class="mb-4">
                 <label class="form-label fw-bold">Password</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
-                    <input type="password" class="form-control" placeholder="******" required>
+                    <input type="password" id="password" class="form-control" placeholder="******" required>
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary w-100 fw-bold py-2">MASUK</button>
+            <button type="submit" id="btn-login" class="btn btn-primary w-100 fw-bold py-2">MASUK</button>
+            <div id="login-error" class="text-danger text-center mt-3 d-none fw-bold"></div>
         </form>
     </div>
 
+    <script>
+        document.getElementById('form-login').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const btnLogin = document.getElementById('btn-login');
+            const errorDiv = document.getElementById('login-error');
+            
+            btnLogin.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+            btnLogin.disabled = true;
+            errorDiv.classList.add('d-none');
+
+            const payload = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+
+            fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(response => {
+                if(!response.ok) throw new Error('Username atau password salah');
+                return response.json();
+            })
+            .then(data => {
+                if(data.token) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('username', data.username);
+                    window.location.href = "{{ url('/dashboard') }}";
+                }
+            })
+            .catch(error => {
+                errorDiv.innerText = error.message;
+                errorDiv.classList.remove('d-none');
+                btnLogin.innerHTML = 'MASUK';
+                btnLogin.disabled = false;
+            });
+        });
+    </script>
 </body>
 </html>

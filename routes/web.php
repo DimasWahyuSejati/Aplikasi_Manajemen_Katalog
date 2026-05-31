@@ -14,12 +14,16 @@ Route::get('/tambah-produk', function () {
     return view('tambah-produk');
 });
 
-Route::get('/edit-produk', function () {
-    return view('edit-produk');
+Route::get('/edit-produk/{id}', function ($id) {
+    return view('edit-produk', ['id' => $id]);
 });
 
 Route::get('/kategori', function () {
     return view('kategori');
+});
+
+Route::get('/merek', function () {
+    return view('merek');
 });
 
 Route::get('/katalog', function () {

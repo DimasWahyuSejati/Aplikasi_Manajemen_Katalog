@@ -58,111 +58,181 @@
                     <tr>
                         <th class="ps-4">ID</th>
                         <th>Nama Model</th>
+                        <th>Merek</th>
                         <th>Kategori</th>
                         <th>Harga</th>
                         <th>Stok</th>
                         <th class="text-center pe-4">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="border-top-0">
-                    <tr>
-                        <td class="ps-4 text-muted">#001</td>
-                        <td class="fw-bold text-dark">Nike Air Max 97</td>
-                        <td><span class="badge bg-secondary bg-opacity-25 text-secondary px-3 py-2 rounded-pill">Sneakers</span></td>
-                        <td class="fw-bold">Rp 2.500.000</td>
-                        <td>15</td>
-                        <td class="text-center pe-4 text-nowrap">
-                            <button class="btn btn-light text-primary btn-sm fw-bold rounded-pill px-3 me-1" data-bs-toggle="modal" data-bs-target="#modalEdit">
-                                <i class="fa-solid fa-pen"></i> Edit
-                            </button>
-                            <button class="btn btn-light text-danger btn-sm fw-bold rounded-pill px-3" onclick="konfirmasiHapus()">
-                                <i class="fa-solid fa-trash"></i> Hapus
-                            </button>
-                        </td>
-                    </tr>
+                <tbody class="border-top-0" id="dashboard-product-list">
+                    <tr><td colspan="7" class="text-center py-4">Memuat data...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 @endsection
 @section('modals')
-    <div class="modal fade" id="modalTambah" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4 border-0">
-                <div class="modal-header bg-primary text-white rounded-top-4">
-                    <h5 class="modal-title fw-bold">Tambah Sepatu Baru</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <form>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted">Nama Model</label>
-                            <input type="text" class="form-control rounded-3" placeholder="Contoh: Vans Old Skool">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted">Kategori</label>
-                            <select class="form-select rounded-3">
-                                <option selected disabled>Pilih Kategori</option>
-                                <option>Sneakers</option>
-                                <option>Boots</option>
-                                <option>Running</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted">Harga (Rp)</label>
-                            <input type="number" class="form-control rounded-3" placeholder="Contoh: 1500000">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted">Stok</label>
-                            <input type="number" class="form-control rounded-3" placeholder="Contoh: 10">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer border-0 pb-4 pe-4">
-                    <button type="button" class="btn btn-light fw-bold rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary fw-bold rounded-pill px-4" data-bs-dismiss="modal">Simpan Data</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Modals are kept here, but we will redirect to /tambah-produk for adding -->
+@endsection
 
-    <div class="modal fade" id="modalEdit" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4 border-0">
-                <div class="modal-header bg-warning rounded-top-4">
-                    <h5 class="modal-title fw-bold text-dark">Edit Data Sepatu</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <form>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted">Nama Model</label>
-                            <input type="text" class="form-control rounded-3" value="Nike Air Max 97">
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetchDashboardProducts();
+});
+
+function fetchDashboardProducts() {
+    // Fetch user count
+    fetchWithAuth('http://localhost:5000/api/auth/count')
+        .then(res => res.json())
+        .then(countData => {
+            const totalElements = document.querySelectorAll('.fw-bold.text-dark.mb-0');
+            if(totalElements.length >= 3) totalElements[2].innerText = countData.count + ' Admin';
+        })
+        .catch(console.error);
+
+    fetchWithAuth('http://localhost:5000/api/categories')
+        .then(res => res.json())
+        .then(categoriesData => {
+            const totalElements = document.querySelectorAll('.fw-bold.text-dark.mb-0');
+            if(totalElements.length >= 2) totalElements[1].innerText = categoriesData.length + ' Tipe';
+        })
+        .catch(console.error);
+
+    fetchWithAuth('http://localhost:5000/api/catalog')
+        .then(response => response.json())
+        .then(data => {
+            // Update Dashboard Counters
+            const totalElements = document.querySelectorAll('.fw-bold.text-dark.mb-0');
+            if(totalElements.length >= 1) totalElements[0].innerText = data.length + ' Pasang';
+            
+            // Render Table
+            const tbody = document.getElementById('dashboard-product-list');
+            tbody.innerHTML = '';
+            
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Belum ada data sepatu.</td></tr>';
+                return;
+            }
+
+            data.forEach(product => {
+                const priceFormatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(product.price);
+                
+                // Build variants badge HTML
+                let variantsHtml = '<span class="text-muted small">Tidak ada data ukuran</span>';
+                if (product.variants && product.variants.length > 0) {
+                    variantsHtml = product.variants
+                        .sort((a, b) => parseInt(a.Size.size_value) - parseInt(b.Size.size_value))
+                        .map(v => {
+                            const badgeColor = v.stock > 0 ? 'bg-primary' : 'bg-secondary bg-opacity-50';
+                            return `<span class="badge ${badgeColor} me-2 mb-2 p-2">EU ${v.Size.size_value} <span class="badge bg-white text-dark ms-1 rounded-pill">${v.stock}</span></span>`;
+                        }).join('');
+                }
+
+                // Main Row
+                const tr = document.createElement('tr');
+                tr.style.cursor = 'pointer';
+                tr.onclick = function(e) {
+                    if (e.target.closest('a') || e.target.closest('button')) return;
+                    const collapseEl = document.getElementById(`collapse-product-${product.id}`);
+                    const bsCollapse = bootstrap.Collapse.getOrCreateInstance(collapseEl);
+                    bsCollapse.toggle();
+                };
+                tr.innerHTML = `
+                    <td class="ps-4 text-muted">#${product.id}</td>
+                    <td class="fw-bold text-dark">
+                        ${product.name}
+                        <i class="fa-solid fa-chevron-down ms-2 text-muted" style="font-size: 0.8rem;"></i>
+                    </td>
+                    <td><span class="badge bg-dark text-white px-3 py-2 rounded-pill">${product.brand || '-'}</span></td>
+                    <td><span class="badge bg-secondary bg-opacity-25 text-secondary px-3 py-2 rounded-pill">${product.category}</span></td>
+                    <td class="fw-bold">${priceFormatted}</td>
+                    <td><span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">${product.stock} total</span></td>
+                    <td class="text-center pe-4 text-nowrap">
+                        <a href="/detail-produk/${product.id}" class="btn btn-light text-primary btn-sm fw-bold rounded-pill px-3 me-1">
+                            <i class="fa-solid fa-eye"></i> Detail
+                        </a>
+                        <button class="btn btn-light text-danger btn-sm fw-bold rounded-pill px-3" onclick="konfirmasiHapus(${product.id})">
+                            <i class="fa-solid fa-trash"></i> Hapus
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+
+                // Collapse Row
+                const trCollapse = document.createElement('tr');
+                trCollapse.innerHTML = `
+                    <td colspan="7" class="p-0 border-0">
+                        <div class="collapse" id="collapse-product-${product.id}">
+                            <div class="p-3 bg-light d-flex align-items-center gap-3 border-bottom">
+                                <div class="fw-bold text-muted small"><i class="fa-solid fa-shoe-prints me-1"></i> Rincian Stok Ukuran:</div>
+                                <div class="d-flex flex-wrap flex-grow-1 align-items-center mt-2">
+                                    ${variantsHtml}
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted">Kategori</label>
-                            <select class="form-select rounded-3">
-                                <option selected>Sneakers</option>
-                                <option>Boots</option>
-                                <option>Running</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted">Harga (Rp)</label>
-                            <input type="number" class="form-control rounded-3" value="2500000">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted">Stok</label>
-                            <input type="number" class="form-control rounded-3" value="15">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer border-0 pb-4 pe-4">
-                    <button type="button" class="btn btn-light fw-bold rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-warning fw-bold text-dark rounded-pill px-4" data-bs-dismiss="modal">Update Data</button>
-                </div>
-            </div>
-        </div>
-    </div>
+                    </td>
+                `;
+                tbody.appendChild(trCollapse);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('dashboard-product-list').innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Gagal memuat data.</td></tr>`;
+        });
+}
+
+// Ganti aksi tombol "Tambah Sepatu" di dashboard untuk arahkan ke halaman tambah-produk
+document.querySelector('[data-bs-target="#modalTambah"]').removeAttribute('data-bs-toggle');
+document.querySelector('[data-bs-target="#modalTambah"]').removeAttribute('data-bs-target');
+document.querySelector('.btn-primary.btn-sm.rounded-pill').addEventListener('click', function() {
+    window.location.href = "{{ url('/tambah-produk') }}";
+});
+
+window.konfirmasiHapus = function(id) {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: "Data yang dihapus tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                prosesHapus(id);
+            }
+        })
+    } else {
+        if(confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+            prosesHapus(id);
+        }
+    }
+}
+
+function prosesHapus(id) {
+    fetchWithAuth('http://localhost:5000/api/catalog/' + id, {
+        method: 'DELETE'
+    })
+    .then(response => {
+        if(!response.ok) throw new Error('Gagal menghapus data');
+        return response.json();
+    })
+    .then(data => {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Terhapus!', 'Data sepatu telah dihapus.', 'success');
+        } else {
+            alert('Data terhapus!');
+        }
+        fetchDashboardProducts(); // Refresh tabel
+    })
+    .catch(error => {
+        alert(error.message);
+    });
+}
+</script>
 @endsection
 
