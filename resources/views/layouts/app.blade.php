@@ -33,7 +33,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#">
+                    <a href="{{ url('/laporan-penjualan') }}" class="{{ request()->is('laporan-penjualan') ? 'active' : '' }}">
                         <i class="fa-solid fa-chart-simple me-3"></i> Laporan Penjualan
                     </a>
                 </li>
