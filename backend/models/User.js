@@ -1,6 +1,10 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 
+/**
+ * Model User: Merepresentasikan tabel 'Users' di database.
+ * Menyimpan data kredensial login (username dan password yang di-hash).
+ */
 const User = sequelize.define('User', {
   id: {
     type: DataTypes.INTEGER,

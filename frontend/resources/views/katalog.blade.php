@@ -1,3 +1,8 @@
+{{-- 
+  Halaman Katalog Produk.
+  Menampilkan semua sepatu dalam bentuk kartu (cards).
+  Mendukung fitur pencarian interaktif, sorting (berdasarkan harga/stok), dan filter (berdasarkan ukuran, kategori, merek).
+--}}
 @extends('layouts.app')
 @section('title', 'Katalog Produk')
 @section('header_title', 'Katalog Sepatu')

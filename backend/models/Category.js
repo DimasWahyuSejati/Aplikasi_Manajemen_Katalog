@@ -1,6 +1,10 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 
+/**
+ * Model Category: Merepresentasikan tabel 'Categories' di database.
+ * Menyimpan jenis/kategori sepatu (contoh: Sneakers, Boots).
+ */
 const Category = sequelize.define('Category', {
   id: {
     type: DataTypes.INTEGER,

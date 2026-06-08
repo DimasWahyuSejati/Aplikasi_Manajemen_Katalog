@@ -1,3 +1,7 @@
+/**
+ * Controller untuk mengelola data Merek (Brand).
+ * Menangani proses CRUD (Create, Read, Delete) untuk merek produk.
+ */
 const Brand = require('../models/Brand');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const { findAllProductsFormatted, formatProductWithStock } = require('../helpers/productHelper');

@@ -1,6 +1,10 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 
+/**
+ * Model ProductVariant: Merepresentasikan tabel 'ProductVariants' di database.
+ * Tabel persimpangan antara Product dan Size yang juga menyimpan jumlah stok spesifik untuk kombinasi tersebut.
+ */
 const ProductVariant = sequelize.define('ProductVariant', {
   id: {
     type: DataTypes.INTEGER,

@@ -1,3 +1,7 @@
+/**
+ * Controller untuk mengelola data Ukuran Sepatu.
+ * Umumnya digunakan hanya untuk membaca (GET) daftar ukuran yang tersedia.
+ */
 const Size = require('../models/Size');
 const { asyncHandler } = require('../middleware/errorHandler');
 

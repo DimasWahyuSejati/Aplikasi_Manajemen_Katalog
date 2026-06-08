@@ -1,3 +1,7 @@
+/**
+ * Controller untuk mengelola data Kategori.
+ * Menangani pembuatan, pengambilan, dan penghapusan data kategori produk.
+ */
 const Category = require('../models/Category');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const { findAllProductsFormatted } = require('../helpers/productHelper');

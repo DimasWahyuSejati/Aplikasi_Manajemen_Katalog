@@ -1,3 +1,7 @@
+/**
+ * Controller untuk mengelola Transaksi Stok.
+ * Mencatat barang masuk/keluar secara manual dan mengelola peringatan stok menipis.
+ */
 const { sequelize } = require('../config/db');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const StockTransaction = require('../models/StockTransaction');

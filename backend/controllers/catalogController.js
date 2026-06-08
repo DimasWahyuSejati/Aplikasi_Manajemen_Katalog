@@ -1,3 +1,7 @@
+/**
+ * Controller utama untuk mengelola Katalog Produk Sepatu.
+ * Menangani CRUD untuk tabel Produk beserta tabel relasinya (ProductVariants).
+ */
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const {
   findAllProductsFormatted,

@@ -1,3 +1,7 @@
+/**
+ * Controller untuk mengelola proses autentikasi.
+ * Menangani registrasi user baru, verifikasi login, dan perhitungan jumlah user.
+ */
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');

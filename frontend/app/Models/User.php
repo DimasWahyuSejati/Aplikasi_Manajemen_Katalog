@@ -2,6 +2,13 @@
 
 namespace App\Models;
 
+/**
+ * Model User bawaan Laravel.
+ * Catatan: Model ini (beserta otentikasi Laravel bawaan) tidak digunakan secara aktif 
+ * di aplikasi ini, karena proses autentikasi (Login/Register) ditangani oleh REST API 
+ * di backend (Express.js) menggunakan JWT.
+ */
+
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

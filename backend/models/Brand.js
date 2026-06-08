@@ -1,6 +1,10 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 
+/**
+ * Model Brand: Merepresentasikan tabel 'Brands' di database.
+ * Menyimpan data merek/brand dari produk sepatu.
+ */
 const Brand = sequelize.define('Brand', {
   id: {
     type: DataTypes.INTEGER,

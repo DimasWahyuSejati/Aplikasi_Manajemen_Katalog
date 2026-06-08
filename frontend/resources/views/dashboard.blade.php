@@ -1,3 +1,8 @@
+{{-- 
+  Halaman Dashboard.
+  Menampilkan statistik singkat (Total Sepatu, Kategori, User) dan tabel ringkasan produk.
+  Juga berfungsi menampilkan peringatan jika ada stok yang menipis.
+--}}
 @extends('layouts.app')
 @section('title', 'Dashboard Katalog Sepatu')
 @section('header_title', 'Dashboard Admin')

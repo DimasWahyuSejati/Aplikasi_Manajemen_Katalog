@@ -1,6 +1,10 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
+/**
+ * Inisialisasi koneksi database menggunakan Sequelize.
+ * Mengambil konfigurasi dari environment variables (.env).
+ */
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,

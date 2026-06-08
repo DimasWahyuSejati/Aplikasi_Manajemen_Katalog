@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+<!-- 
+  Layout Utama (Master Template) Aplikasi Frontend
+  Semua halaman utama (Dashboard, Katalog, dll) akan dieksekusi (di-extend) ke dalam kerangka ini.
+  Berisi kerangka Sidebar, Top Navbar, dan impor file JS/CSS global.
+-->
 <html lang="id">
 <head>
     <meta charset="UTF-8">

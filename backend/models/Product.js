@@ -1,6 +1,10 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 
+/**
+ * Model Product: Merepresentasikan tabel 'Products' di database.
+ * Menyimpan informasi utama produk sepatu (tanpa stok spesifik ukuran).
+ */
 const Product = sequelize.define('Product', {
   id: {
     type: DataTypes.INTEGER,

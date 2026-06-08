@@ -1,6 +1,10 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 
+/**
+ * Model StockTransaction: Merepresentasikan tabel 'stock_transactions'.
+ * Digunakan untuk mencatat setiap perubahan (mutasi) stok, baik barang masuk (IN) maupun barang keluar (OUT).
+ */
 const StockTransaction = sequelize.define('StockTransaction', {
   id: {
     type: DataTypes.INTEGER,

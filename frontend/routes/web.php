@@ -2,6 +2,13 @@
 
 use Illuminate\Support\Facades\Route;
 
+/**
+ * File rute (routes) web untuk aplikasi frontend.
+ * Karena aplikasi ini menggunakan pendekatan Client-Side Rendering via JavaScript,
+ * Laravel di sini HANYA bertugas sebagai penyedia kerangka tampilan (View/Blade).
+ * Seluruh manipulasi data (CRUD) dan logika bisnis dilakukan melalui REST API backend.
+ */
+
 // Halaman Login (Default)
 Route::get('/', function () {
     return view('login');
