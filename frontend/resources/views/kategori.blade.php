@@ -92,7 +92,6 @@
 
 @section('scripts')
 <script>
-// We store categories globally so we can access them for the modal
 let globalCategories = [];
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -100,51 +99,54 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function fetchCategories() {
-    fetchWithAuth('http://localhost:5000/api/categories')
+    fetchWithAuth(API_ENDPOINTS.categories)
         .then(response => response.json())
         .then(data => {
             globalCategories = data;
-            const tbody = document.getElementById('kategori-list');
-            tbody.innerHTML = '';
-            
-            if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Belum ada kategori yang digunakan di data produk.</td></tr>';
-                return;
-            }
-
-            data.forEach((cat, index) => {
-                const tr = document.createElement('tr');
-                
-                let deleteBtnHtml = '';
-                if (cat.count === 0) {
-                    deleteBtnHtml = `
-                        <button class="btn btn-light text-danger btn-sm fw-bold rounded-pill px-3" onclick="konfirmasiHapusKategori(${cat.id})">
-                            <i class="fa-solid fa-trash"></i> Hapus
-                        </button>
-                    `;
-                }
-
-                tr.innerHTML = `
-                    <td class="ps-4 text-muted fw-bold">${index + 1}</td>
-                    <td class="fw-bold text-dark">${cat.name}</td>
-                    <td class="text-center">
-                        <span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill border border-info border-opacity-25">${cat.count} Produk</span>
-                    </td>
-                    <td class="text-center pe-4 text-nowrap">
-                        <button class="btn btn-light text-primary btn-sm fw-bold rounded-pill px-3 me-1" onclick="tampilkanDetailKategori('${cat.name}')">
-                            <i class="fa-solid fa-eye"></i> Detail
-                        </button>
-                        ${deleteBtnHtml}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
+            renderCategoryTable(data);
         })
-        .catch(error => {
-            document.getElementById('kategori-list').innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Gagal memuat data kategori.</td></tr>`;
+        .catch(() => {
+            document.getElementById('kategori-list').innerHTML =
+                `<tr><td colspan="4" class="text-center py-4 text-danger">Gagal memuat data kategori.</td></tr>`;
         });
 }
 
+function renderCategoryTable(data) {
+    const tbody = document.getElementById('kategori-list');
+    tbody.innerHTML = '';
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Belum ada kategori.</td></tr>';
+        return;
+    }
+
+    data.forEach((cat, index) => {
+        const deleteBtnHtml = cat.count === 0
+            ? `<button class="btn btn-light text-danger btn-sm fw-bold rounded-pill px-3" onclick="hapusKategori(${cat.id})"><i class="fa-solid fa-trash"></i> Hapus</button>`
+            : '';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="ps-4 text-muted fw-bold">${index + 1}</td>
+            <td class="fw-bold text-dark">${cat.name}</td>
+            <td class="text-center">
+                <span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill border border-info border-opacity-25">${cat.count} Produk</span>
+            </td>
+            <td class="text-center pe-4 text-nowrap">
+                <button class="btn btn-light text-primary btn-sm fw-bold rounded-pill px-3 me-1" onclick="tampilkanDetailKategori('${cat.name}')">
+                    <i class="fa-solid fa-eye"></i> Detail
+                </button>
+                ${deleteBtnHtml}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+/**
+ * Render detail produk dalam modal untuk kategori tertentu.
+ * Menggunakan helper renderVariantsBadges & renderVariantsCollapse.
+ */
 window.tampilkanDetailKategori = function(catName) {
     const category = globalCategories.find(c => c.name === catName);
     if (!category) return;
@@ -153,142 +155,86 @@ window.tampilkanDetailKategori = function(catName) {
     const tbody = document.getElementById('detail-kategori-list');
     tbody.innerHTML = '';
     
-    if (category.products && category.products.length > 0) {
+    if (!category.products || category.products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada produk dalam kategori ini.</td></tr>';
+    } else {
         category.products.forEach(p => {
-            const tr = document.createElement('tr');
-            
             let imgHtml = `<div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;"><i class="fa-solid fa-shoe-prints text-muted opacity-50"></i></div>`;
             if (p.imageUrl) {
                 imgHtml = `<img src="${p.imageUrl}" class="rounded shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">`;
             }
 
-            const priceFormatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(p.price);
-
-            let variantsHtml = '<span class="text-muted small">Tidak ada data ukuran</span>';
-            if (p.variants && p.variants.length > 0) {
-                variantsHtml = p.variants
-                    .sort((a, b) => parseInt(a.Size.size_value) - parseInt(b.Size.size_value))
-                    .map(v => {
-                        const badgeColor = v.stock > 0 ? 'bg-primary' : 'bg-secondary bg-opacity-50';
-                        return `<span class="badge ${badgeColor} me-2 mb-2 p-2">EU ${v.Size.size_value} <span class="badge bg-white text-dark ms-1 rounded-pill">${v.stock}</span></span>`;
-                    }).join('');
-            }
-
             // Main Row
+            const tr = document.createElement('tr');
             tr.style.cursor = 'pointer';
             tr.onclick = function(e) {
                 if (e.target.closest('a') || e.target.closest('button')) return;
                 const collapseEl = document.getElementById(`collapse-kategori-product-${p.id}`);
-                const bsCollapse = bootstrap.Collapse.getOrCreateInstance(collapseEl);
-                bsCollapse.toggle();
+                bootstrap.Collapse.getOrCreateInstance(collapseEl).toggle();
             };
             tr.innerHTML = `
                 <td class="ps-4">${imgHtml}</td>
                 <td class="text-muted">#${p.id}</td>
-                <td class="fw-bold text-dark">
-                    ${p.name}
-                    <i class="fa-solid fa-chevron-down ms-2 text-muted" style="font-size: 0.8rem;"></i>
-                </td>
+                <td class="fw-bold text-dark">${p.name} <i class="fa-solid fa-chevron-down ms-2 text-muted" style="font-size: 0.8rem;"></i></td>
                 <td><span class="badge bg-dark text-white px-3 py-2 rounded-pill">${p.brand || '-'}</span></td>
-                <td class="fw-bold">${priceFormatted}</td>
+                <td class="fw-bold">${formatCurrency(p.price)}</td>
                 <td><span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">${p.stock} total</span></td>
-                <td class="pe-4 text-center">
-                    <a href="/detail-produk/${p.id}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">Lihat</a>
-                </td>
+                <td class="pe-4 text-center"><a href="/detail-produk/${p.id}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">Lihat</a></td>
             `;
             tbody.appendChild(tr);
 
             // Collapse Row
             const trCollapse = document.createElement('tr');
-            trCollapse.innerHTML = `
-                <td colspan="7" class="p-0 border-0">
-                    <div class="collapse" id="collapse-kategori-product-${p.id}">
-                        <div class="p-3 bg-light d-flex align-items-center gap-3 border-bottom">
-                            <div class="fw-bold text-muted small"><i class="fa-solid fa-shoe-prints me-1"></i> Rincian Stok Ukuran:</div>
-                            <div class="d-flex flex-wrap flex-grow-1 align-items-center mt-2">
-                                ${variantsHtml}
-                            </div>
-                        </div>
-                    </div>
-                </td>
-            `;
+            trCollapse.innerHTML = renderVariantsCollapse(p.id, p.variants, 'kategori-product');
             tbody.appendChild(trCollapse);
         });
-    } else {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada produk dalam kategori ini.</td></tr>';
     }
     
-    const modalEl = document.getElementById('modalDetailKategori');
-    const modal = new bootstrap.Modal(modalEl);
-    modal.show();
+    new bootstrap.Modal(document.getElementById('modalDetailKategori')).show();
 }
 
+// ─── Form Tambah Kategori ─────────────────────────────────────────
 document.getElementById('form-tambah-kategori').addEventListener('submit', function(e) {
     e.preventDefault();
     const btnSubmit = document.getElementById('btn-submit-kategori');
-    btnSubmit.disabled = true;
-    btnSubmit.innerHTML = 'Menyimpan...';
+    setButtonLoading(btnSubmit, true);
 
     const data = {
         name: document.getElementById('kategori-name').value,
         description: document.getElementById('kategori-desc').value
     };
 
-    fetchWithAuth('http://localhost:5000/api/categories', {
-        method: 'POST',
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        if(!response.ok) throw new Error('Kategori sudah ada atau input tidak valid');
-        return response.json();
-    })
-    .then(result => {
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalTambahKategori')) || new bootstrap.Modal(document.getElementById('modalTambahKategori'));
-        modal.hide();
-        document.getElementById('form-tambah-kategori').reset();
-        fetchCategories();
-        if (typeof Swal !== 'undefined') {
-            Swal.fire('Berhasil!', 'Kategori ditambahkan.', 'success');
-        }
-    })
-    .catch(error => {
-        alert(error.message);
-    })
-    .finally(() => {
-        btnSubmit.disabled = false;
-        btnSubmit.innerHTML = 'Simpan';
-    });
+    fetchWithAuth(API_ENDPOINTS.categories, { method: 'POST', body: JSON.stringify(data) })
+        .then(response => {
+            if (!response.ok) throw new Error('Kategori sudah ada atau input tidak valid');
+            return response.json();
+        })
+        .then(() => {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalTambahKategori'));
+            if (modal) modal.hide();
+            document.getElementById('form-tambah-kategori').reset();
+            fetchCategories();
+            showSuccess('Berhasil!', 'Kategori ditambahkan.');
+        })
+        .catch(error => alert(error.message))
+        .finally(() => setButtonLoading(btnSubmit, false, 'Simpan'));
 });
 
-window.konfirmasiHapusKategori = function(id) {
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            title: 'Hapus Kategori?',
-            text: "Kategori akan dihapus dari daftar.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Ya, Hapus!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                hapusKategori(id);
-            }
-        });
-    } else {
-        if(confirm('Hapus kategori?')) hapusKategori(id);
-    }
-}
-
-function hapusKategori(id) {
-    fetchWithAuth('http://localhost:5000/api/categories/' + id, {
-        method: 'DELETE'
-    })
-    .then(res => {
-        if(!res.ok) throw new Error('Gagal menghapus');
-        fetchCategories();
-        if (typeof Swal !== 'undefined') Swal.fire('Terhapus!', 'Kategori telah dihapus.', 'success');
-    })
-    .catch(err => alert(err.message));
+// ─── Hapus Kategori ───────────────────────────────────────────────
+window.hapusKategori = function(id) {
+    confirmDelete({
+        title: 'Hapus Kategori?',
+        text: 'Kategori akan dihapus dari daftar.',
+        onConfirm: () => {
+            fetchWithAuth(API_ENDPOINTS.categoryById(id), { method: 'DELETE' })
+                .then(res => {
+                    if (!res.ok) throw new Error('Gagal menghapus');
+                    fetchCategories();
+                    showSuccess('Terhapus!', 'Kategori telah dihapus.');
+                })
+                .catch(err => alert(err.message));
+        }
+    });
 }
 </script>
 @endsection

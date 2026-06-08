@@ -1,165 +1,178 @@
+const { asyncHandler, AppError } = require('../middleware/errorHandler');
+const {
+  findAllProductsFormatted,
+  findProductByIdFormatted,
+  getProductIncludeOptions,
+} = require('../helpers/productHelper');
 const Product = require('../models/Product');
 const ProductVariant = require('../models/ProductVariant');
 const Size = require('../models/Size');
+const StockTransaction = require('../models/StockTransaction');
 const { sequelize } = require('../config/db');
 
-// Get all products
-const getProducts = async (req, res) => {
-  try {
-    const products = await Product.findAll({
-      include: [
-        {
-          model: ProductVariant,
-          as: 'variants',
-          include: [{ model: Size }]
-        }
-      ]
-    });
-    
-    // Calculate total stock for each product to make frontend logic easier
-    const formattedProducts = products.map(p => {
-      const productData = p.toJSON();
-      productData.totalStock = productData.variants.reduce((sum, variant) => sum + variant.stock, 0);
-      
-      // Kept for backward compatibility if some old frontend code expects 'stock' 
-      // but 'totalStock' is better.
-      productData.stock = productData.totalStock; 
-      return productData;
-    });
+/**
+ * @desc    Get all products dengan variants dan total stock
+ * @route   GET /api/catalog
+ */
+const getProducts = asyncHandler(async (req, res) => {
+  const products = await findAllProductsFormatted();
+  res.json(products);
+});
 
-    res.json(formattedProducts);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+/**
+ * @desc    Get single product by ID
+ * @route   GET /api/catalog/:id
+ */
+const getProductById = asyncHandler(async (req, res) => {
+  const product = await findProductByIdFormatted(req.params.id);
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
   }
-};
 
-// Get product by ID
-const getProductById = async (req, res) => {
-  try {
-    const product = await Product.findByPk(req.params.id, {
-      include: [
-        {
-          model: ProductVariant,
-          as: 'variants',
-          include: [{ model: Size }]
-        }
-      ]
-    });
-    if (product) {
-      const productData = product.toJSON();
-      productData.totalStock = productData.variants.reduce((sum, variant) => sum + variant.stock, 0);
-      productData.stock = productData.totalStock;
-      res.json(productData);
-    } else {
-      res.status(404).json({ message: 'Product not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+  res.json(product);
+});
 
-// Create a product
-const createProduct = async (req, res) => {
+/**
+ * @desc    Create a new product dengan variants
+ * @route   POST /api/catalog
+ */
+const createProduct = asyncHandler(async (req, res) => {
   const transaction = await sequelize.transaction();
-  try {
-    const { name, brand, category, color, price, description, imageUrl, variants } = req.body;
-    
-    // Create the main product
-    const product = await Product.create({
-      name,
-      brand,
-      category,
-      color,
-      price,
-      description,
-      imageUrl
-    }, { transaction });
 
-    // Handle variants array [{size_id: 1, stock: 10}, ...]
-    if (variants && Array.isArray(variants)) {
-      const variantData = variants.map(v => ({
+  const { name, brand, category, color, price, description, imageUrl, variants } = req.body;
+
+  // Buat produk utama
+  const product = await Product.create(
+    { name, brand, category, color, price, description, imageUrl },
+    { transaction }
+  );
+
+  // Buat variants jika ada dan log transaksi
+  if (variants && Array.isArray(variants)) {
+    const createdVariants = await ProductVariant.bulkCreate(
+      variants.map((v) => ({
         product_id: product.id,
         size_id: v.size_id,
-        stock: v.stock || 0
-      }));
-      await ProductVariant.bulkCreate(variantData, { transaction });
+        stock: v.stock || 0,
+      })), 
+      { transaction, returning: true }
+    );
+
+    // Log stok awal
+    const logs = createdVariants.filter(v => v.stock > 0).map(v => ({
+      product_variant_id: v.id,
+      type: 'IN',
+      quantity: v.stock,
+      reason: 'Stok Awal (Penyesuaian Manual)'
+    }));
+    if (logs.length > 0) {
+      await StockTransaction.bulkCreate(logs, { transaction });
     }
-
-    await transaction.commit();
-    
-    // Fetch the created product with its variants
-    const createdProduct = await Product.findByPk(product.id, {
-      include: [{ model: ProductVariant, as: 'variants', include: [Size] }]
-    });
-
-    res.status(201).json(createdProduct);
-  } catch (error) {
-    await transaction.rollback();
-    res.status(400).json({ message: error.message });
   }
-};
 
-// Update a product
-const updateProduct = async (req, res) => {
+  await transaction.commit();
+
+  // Ambil kembali product dengan relasi lengkap
+  const createdProduct = await Product.findByPk(product.id, {
+    include: getProductIncludeOptions(),
+  });
+
+  res.status(201).json(createdProduct);
+});
+
+/**
+ * @desc    Update existing product dan variants
+ * @route   PUT /api/catalog/:id
+ */
+const updateProduct = asyncHandler(async (req, res) => {
   const transaction = await sequelize.transaction();
-  try {
-    const product = await Product.findByPk(req.params.id);
-    if (!product) {
-      await transaction.rollback();
-      return res.status(404).json({ message: 'Product not found' });
-    }
 
-    const { name, brand, category, color, price, description, imageUrl, variants } = req.body;
-    
-    await product.update({
-      name, brand, category, color, price, description, imageUrl
-    }, { transaction });
-
-    // Handle variants if provided
-    if (variants && Array.isArray(variants)) {
-      // Simplest approach: delete existing variants for this product and insert new ones
-      await ProductVariant.destroy({ where: { product_id: product.id }, transaction });
-      
-      const variantData = variants.map(v => ({
-        product_id: product.id,
-        size_id: v.size_id,
-        stock: v.stock || 0
-      }));
-      await ProductVariant.bulkCreate(variantData, { transaction });
-    }
-
-    await transaction.commit();
-    
-    const updatedProduct = await Product.findByPk(product.id, {
-      include: [{ model: ProductVariant, as: 'variants', include: [Size] }]
-    });
-
-    res.json(updatedProduct);
-  } catch (error) {
+  const product = await Product.findByPk(req.params.id);
+  if (!product) {
     await transaction.rollback();
-    res.status(400).json({ message: error.message });
+    throw new AppError('Product not found', 404);
   }
-};
 
-// Delete a product
-const deleteProduct = async (req, res) => {
-  try {
-    const product = await Product.findByPk(req.params.id);
-    if (product) {
-      await product.destroy();
-      res.json({ message: 'Product removed' });
-    } else {
-      res.status(404).json({ message: 'Product not found' });
+  const { name, brand, category, color, price, description, imageUrl, variants } = req.body;
+
+  await product.update(
+    { name, brand, category, color, price, description, imageUrl },
+    { transaction }
+  );
+
+  // Update variants tanpa destroy agar riwayat StockTransaction tidak error/hilang
+  if (variants && Array.isArray(variants)) {
+    for (const v of variants) {
+      // Cari varian yang sudah ada
+      let variant = await ProductVariant.findOne({ 
+        where: { product_id: product.id, size_id: v.size_id },
+        transaction 
+      });
+
+      const newStock = v.stock || 0;
+
+      if (variant) {
+        // Jika ada perubahan stok, catat log transaksinya
+        if (variant.stock !== newStock) {
+          const diff = newStock - variant.stock;
+          await StockTransaction.create({
+            product_variant_id: variant.id,
+            type: diff > 0 ? 'IN' : 'OUT',
+            quantity: Math.abs(diff),
+            reason: 'Update Produk (Penyesuaian Manual)'
+          }, { transaction });
+          
+          await variant.update({ stock: newStock }, { transaction });
+        }
+      } else {
+        // Jika ini varian ukuran baru untuk produk ini
+        variant = await ProductVariant.create({
+          product_id: product.id,
+          size_id: v.size_id,
+          stock: newStock
+        }, { transaction });
+
+        if (newStock > 0) {
+          await StockTransaction.create({
+            product_variant_id: variant.id,
+            type: 'IN',
+            quantity: newStock,
+            reason: 'Stok Awal (Penyesuaian Manual)'
+          }, { transaction });
+        }
+      }
     }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
   }
-};
+
+  await transaction.commit();
+
+  const updatedProduct = await Product.findByPk(product.id, {
+    include: getProductIncludeOptions(),
+  });
+
+  res.json(updatedProduct);
+});
+
+/**
+ * @desc    Delete a product
+ * @route   DELETE /api/catalog/:id
+ */
+const deleteProduct = asyncHandler(async (req, res) => {
+  const product = await Product.findByPk(req.params.id);
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  await product.destroy();
+  res.json({ message: 'Product removed' });
+});
 
 module.exports = {
   getProducts,
   getProductById,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
 };

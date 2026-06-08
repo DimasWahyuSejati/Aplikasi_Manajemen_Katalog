@@ -1,76 +1,62 @@
 const Brand = require('../models/Brand');
-const Product = require('../models/Product');
-const ProductVariant = require('../models/ProductVariant');
-const Size = require('../models/Size');
+const { asyncHandler, AppError } = require('../middleware/errorHandler');
+const { findAllProductsFormatted, formatProductWithStock } = require('../helpers/productHelper');
 
-// Get all brands with their associated products count
-const getBrands = async (req, res) => {
-  try {
-    const brands = await Brand.findAll();
-    const products = await Product.findAll({
-      include: [
-        {
-          model: ProductVariant,
-          as: 'variants',
-          include: [{ model: Size }]
-        }
-      ]
-    });
+/**
+ * @desc    Get all brands dengan jumlah produk terkait
+ * @route   GET /api/brands
+ */
+const getBrands = asyncHandler(async (req, res) => {
+  const brands = await Brand.findAll();
+  const products = await findAllProductsFormatted();
 
-    const result = brands.map(brand => {
-      const brandProducts = products.filter(p => p.brand === brand.name).map(p => {
-        const productData = p.toJSON();
-        productData.totalStock = productData.variants.reduce((sum, variant) => sum + variant.stock, 0);
-        productData.stock = productData.totalStock; // For backward compatibility
-        return productData;
-      });
-      return {
-        id: brand.id,
-        name: brand.name,
-        description: brand.description,
-        count: brandProducts.length,
-        products: brandProducts
-      };
-    });
-    
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  const result = brands.map((brand) => {
+    const brandProducts = products.filter((p) => p.brand === brand.name);
+    return {
+      id: brand.id,
+      name: brand.name,
+      description: brand.description,
+      count: brandProducts.length,
+      products: brandProducts,
+    };
+  });
+
+  res.json(result);
+});
+
+/**
+ * @desc    Create a new brand
+ * @route   POST /api/brands
+ */
+const createBrand = asyncHandler(async (req, res) => {
+  const { name, description } = req.body;
+
+  const brandExists = await Brand.findOne({ where: { name } });
+  if (brandExists) {
+    throw new AppError('Brand already exists', 400);
   }
-};
 
-// Create a brand
-const createBrand = async (req, res) => {
-  try {
-    const { name, description } = req.body;
-    const brandExists = await Brand.findOne({ where: { name } });
-    if (brandExists) {
-      return res.status(400).json({ message: 'Brand already exists' });
-    }
-    const brand = await Brand.create({ name, description });
-    res.status(201).json(brand);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+  const brand = await Brand.create({ name, description });
+  res.status(201).json(brand);
+});
 
-// Delete a brand
-const deleteBrand = async (req, res) => {
-  try {
-    const brand = await Brand.findByPk(req.params.id);
-    if (brand) {
-      await brand.destroy();
-      res.json({ message: 'Brand removed' });
-    } else {
-      res.status(404).json({ message: 'Brand not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+/**
+ * @desc    Delete a brand
+ * @route   DELETE /api/brands/:id
+ */
+const deleteBrand = asyncHandler(async (req, res) => {
+  const brand = await Brand.findByPk(req.params.id);
+
+  if (!brand) {
+    throw new AppError('Brand not found', 404);
   }
-};
+
+  await brand.destroy();
+  res.json({ message: 'Brand removed' });
+});
 
 module.exports = {
   getBrands,
   createBrand,
-  deleteBrand
+  deleteBrand,
 };

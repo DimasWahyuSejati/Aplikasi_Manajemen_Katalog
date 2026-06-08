@@ -67,7 +67,6 @@
     </div>
 
     <div class="row g-4" id="product-container">
-        <!-- Products will be injected here via JavaScript -->
         <div class="col-12 text-center py-5">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -94,38 +93,48 @@ document.addEventListener('DOMContentLoaded', function() {
     setupSearchHandler();
 });
 
+/**
+ * Setup generic dropdown filter handler.
+ * Mengurangi duplikasi kode setup filter di setiap dropdown.
+ */
+function setupDropdownFilter(listId, buttonId, dataAttr, iconHtml, onSelect) {
+    const filterList = document.getElementById(listId);
+    filterList.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            filterList.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active', 'fw-bold'));
+            this.classList.add('active', 'fw-bold');
+            onSelect(this.dataset[dataAttr]);
+            document.getElementById(buttonId).innerHTML = `${iconHtml} ${this.textContent}`;
+            renderProducts();
+        });
+    });
+}
+
 function fetchSizesForFilter() {
-    fetchWithAuth('http://localhost:5000/api/sizes')
+    fetchWithAuth(API_ENDPOINTS.sizes)
         .then(res => res.json())
         .then(sizes => {
             const filterList = document.getElementById('ukuran-filter-list');
             filterList.innerHTML = '<li><a class="dropdown-item active fw-bold" href="#" data-size="all">Semua Ukuran</a></li>';
             
-            // Sort sizes
             sizes.sort((a, b) => parseInt(a.size_value) - parseInt(b.size_value));
-            
             sizes.forEach(size => {
                 const li = document.createElement('li');
                 li.innerHTML = `<a class="dropdown-item" href="#" data-size="${size.size_value}">EU ${size.size_value}</a>`;
                 filterList.appendChild(li);
             });
 
-            filterList.querySelectorAll('.dropdown-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    filterList.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active', 'fw-bold'));
-                    this.classList.add('active', 'fw-bold');
-                    currentSize = this.dataset.size;
-                    document.getElementById('btn-filter-ukuran').innerHTML = `<i class="fa-solid fa-ruler-combined me-1"></i> ${this.textContent}`;
-                    renderProducts();
-                });
-            });
+            setupDropdownFilter('ukuran-filter-list', 'btn-filter-ukuran', 'size',
+                '<i class="fa-solid fa-ruler-combined me-1"></i>',
+                (val) => { currentSize = val; }
+            );
         })
         .catch(console.error);
 }
 
 function fetchCategoriesForFilter() {
-    fetchWithAuth('http://localhost:5000/api/categories')
+    fetchWithAuth(API_ENDPOINTS.categories)
         .then(res => res.json())
         .then(categories => {
             const filterList = document.getElementById('kategori-filter-list');
@@ -136,22 +145,16 @@ function fetchCategoriesForFilter() {
                 filterList.appendChild(li);
             });
 
-            filterList.querySelectorAll('.dropdown-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    filterList.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active', 'fw-bold'));
-                    this.classList.add('active', 'fw-bold');
-                    currentCategory = this.dataset.category;
-                    document.getElementById('btn-filter-kategori').innerHTML = `<i class="fa-solid fa-filter me-1"></i> ${this.textContent}`;
-                    renderProducts();
-                });
-            });
+            setupDropdownFilter('kategori-filter-list', 'btn-filter-kategori', 'category',
+                '<i class="fa-solid fa-filter me-1"></i>',
+                (val) => { currentCategory = val; }
+            );
         })
         .catch(console.error);
 }
 
 function fetchBrandsForFilter() {
-    fetchWithAuth('http://localhost:5000/api/brands')
+    fetchWithAuth(API_ENDPOINTS.brands)
         .then(res => res.json())
         .then(brands => {
             const filterList = document.getElementById('merek-filter-list');
@@ -162,32 +165,19 @@ function fetchBrandsForFilter() {
                 filterList.appendChild(li);
             });
 
-            filterList.querySelectorAll('.dropdown-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    filterList.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active', 'fw-bold'));
-                    this.classList.add('active', 'fw-bold');
-                    currentBrand = this.dataset.brand;
-                    document.getElementById('btn-filter-merek').innerHTML = `<i class="fa-solid fa-copyright me-1"></i> ${this.textContent}`;
-                    renderProducts();
-                });
-            });
+            setupDropdownFilter('merek-filter-list', 'btn-filter-merek', 'brand',
+                '<i class="fa-solid fa-copyright me-1"></i>',
+                (val) => { currentBrand = val; }
+            );
         })
         .catch(console.error);
 }
 
 function setupSortHandlers() {
-    const sortList = document.getElementById('sort-list');
-    sortList.querySelectorAll('.dropdown-item').forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            sortList.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active', 'fw-bold'));
-            this.classList.add('active', 'fw-bold');
-            currentSort = this.dataset.sort;
-            document.getElementById('btn-sort').innerHTML = `<i class="fa-solid fa-arrow-down-wide-short me-1"></i> ${this.textContent}`;
-            renderProducts();
-        });
-    });
+    setupDropdownFilter('sort-list', 'btn-sort', 'sort',
+        '<i class="fa-solid fa-arrow-down-wide-short me-1"></i>',
+        (val) => { currentSort = val; }
+    );
 }
 
 function setupSearchHandler() {
@@ -206,24 +196,12 @@ function renderProducts() {
     const container = document.getElementById('product-container');
     container.innerHTML = '';
 
-    let filtered = allProducts;
+    let filtered = [...allProducts];
 
-    // Filter by category
-    if (currentCategory !== 'all') {
-        filtered = filtered.filter(p => p.category === currentCategory);
-    }
-
-    // Filter by brand
-    if (currentBrand !== 'all') {
-        filtered = filtered.filter(p => p.brand === currentBrand);
-    }
-
-    // Filter by size
-    if (currentSize !== 'all') {
-        filtered = filtered.filter(p => p.variants && p.variants.some(v => v.Size.size_value == currentSize));
-    }
-
-    // Filter by search query
+    // Apply filters
+    if (currentCategory !== 'all') filtered = filtered.filter(p => p.category === currentCategory);
+    if (currentBrand !== 'all') filtered = filtered.filter(p => p.brand === currentBrand);
+    if (currentSize !== 'all') filtered = filtered.filter(p => p.variants && p.variants.some(v => v.Size.size_value == currentSize));
     if (searchQuery) {
         filtered = filtered.filter(p => 
             (p.name && p.name.toLowerCase().includes(searchQuery)) ||
@@ -232,18 +210,16 @@ function renderProducts() {
         );
     }
 
-    // Sort
-    if (currentSort === 'price-high') {
-        filtered.sort((a, b) => b.price - a.price);
-    } else if (currentSort === 'price-low') {
-        filtered.sort((a, b) => a.price - b.price);
-    } else if (currentSort === 'stock-high') {
-        filtered.sort((a, b) => b.stock - a.stock);
-    } else if (currentSort === 'stock-low') {
-        filtered.sort((a, b) => a.stock - b.stock);
-    }
+    // Apply sorting
+    const sortMap = {
+        'price-high': (a, b) => b.price - a.price,
+        'price-low': (a, b) => a.price - b.price,
+        'stock-high': (a, b) => b.stock - a.stock,
+        'stock-low': (a, b) => a.stock - b.stock,
+    };
+    if (sortMap[currentSort]) filtered.sort(sortMap[currentSort]);
 
-    if(filtered.length === 0) {
+    if (filtered.length === 0) {
         container.innerHTML = '<div class="col-12 text-center text-muted py-5"><h4>Tidak ada sepatu ditemukan.</h4></div>';
         return;
     }
@@ -253,18 +229,11 @@ function renderProducts() {
         let badgeClass = 'bg-secondary';
         let categoryName = product.category || 'Lainnya';
         
-        if (product.category && product.category.toLowerCase() === 'sneakers') {
-            iconClass = 'fa-shoe-prints';
-            badgeClass = 'bg-secondary';
-        } else if (product.category === 'Boots') {
-            iconClass = 'fa-boot';
-            badgeClass = 'bg-info text-dark';
+        if (product.category === 'Boots') {
+            iconClass = 'fa-boot'; badgeClass = 'bg-info text-dark';
         } else if (product.category === 'Running') {
-            iconClass = 'fa-person-running';
-            badgeClass = 'bg-warning text-dark';
+            iconClass = 'fa-person-running'; badgeClass = 'bg-warning text-dark';
         }
-
-        const priceFormatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(product.price);
 
         let imageContent = `<i class="fa-solid ${iconClass} fa-4x text-muted opacity-25"></i>`;
         if (product.imageUrl) {
@@ -274,15 +243,14 @@ function renderProducts() {
         const brandHtml = product.brand ? `<span class="badge bg-dark text-white rounded-pill px-3 py-1 me-1">${product.brand}</span>` : '';
 
         // Generate size labels
-        let sizeLabels = '';
+        let sizeLabels = '<span class="text-muted small">Ukuran tidak tersedia</span>';
         if (product.variants && product.variants.length > 0) {
             const sortedVariants = [...product.variants].sort((a, b) => parseInt(a.Size.size_value) - parseInt(b.Size.size_value));
             sizeLabels = sortedVariants.map(v => {
-                const badgeClass = v.stock > 0 ? 'border border-primary text-primary' : 'border border-secondary text-secondary opacity-50';
-                return `<span class="badge ${badgeClass} bg-white me-1 mb-1 size-selector" style="cursor:pointer;" onclick="updateCardStock(${product.id}, ${v.stock}, this)">EU ${v.Size.size_value}</span>`;
+                const hasStock = v.stock > 0;
+                const cls = hasStock ? 'border border-primary text-primary' : 'border border-secondary text-secondary opacity-50';
+                return `<span class="badge ${cls} bg-white me-1 mb-1 size-selector" style="cursor:pointer;" onclick="updateCardStock(${product.id}, ${v.stock}, this)" data-has-stock="${hasStock}">EU ${v.Size.size_value}</span>`;
             }).join('');
-        } else {
-            sizeLabels = '<span class="text-muted small">Ukuran tidak tersedia</span>';
         }
 
         const cardHtml = `
@@ -297,10 +265,8 @@ function renderProducts() {
                     <div class="card-body p-4 d-flex flex-column">
                         <div class="mb-1">${brandHtml}</div>
                         <h5 class="fw-bold text-dark mb-2 text-truncate" title="${product.name}">${product.name}</h5>
-                        <div class="mb-2">
-                            ${sizeLabels}
-                        </div>
-                        <p class="text-primary fw-bold fs-5 mb-3 text-nowrap">${priceFormatted}</p>
+                        <div class="mb-2">${sizeLabels}</div>
+                        <p class="text-primary fw-bold fs-5 mb-3 text-nowrap">${formatCurrency(product.price)}</p>
                         
                         <div class="mt-auto">
                             <hr class="text-muted opacity-25 my-3">
@@ -320,29 +286,28 @@ function renderProducts() {
 }
 
 function updateCardStock(productId, stock, element) {
-    // Reset all size badges in this card
     const card = element.closest('.product-card');
     card.querySelectorAll('.size-selector').forEach(el => {
         el.classList.remove('bg-primary', 'text-white');
         el.classList.add('bg-white');
-        // keep border color
+        
+        // Restore text color based on original stock state
+        if (el.dataset.hasStock === 'true') {
+            el.classList.add('text-primary');
+        } else {
+            el.classList.add('text-secondary');
+        }
     });
 
-    // Make the clicked one active
     element.classList.remove('bg-white', 'text-primary', 'text-secondary');
     element.classList.add('bg-primary', 'text-white');
 
-    // Update the text
     const stockDisplay = document.getElementById(`card-stock-${productId}`);
-    if (stockDisplay) {
-        stockDisplay.innerHTML = `Stok: ${stock}`;
-    }
+    if (stockDisplay) stockDisplay.innerHTML = `Stok: ${stock}`;
 }
 
 function fetchProducts() {
-    const apiUrl = 'http://localhost:5000/api/catalog';
-    
-    fetchWithAuth(apiUrl)
+    fetchWithAuth(API_ENDPOINTS.catalog)
         .then(response => response.json())
         .then(data => {
             allProducts = data;
@@ -360,4 +325,3 @@ function fetchProducts() {
 }
 </script>
 @endsection
-

@@ -2,49 +2,59 @@
 
 use Illuminate\Support\Facades\Route;
 
+// Halaman Login (Default)
 Route::get('/', function () {
     return view('login');
 });
 
+// Halaman Register
+Route::get('/register', function () {
+    return view('register');
+});
+
+// Dashboard
 Route::get('/dashboard', function () {
     return view('dashboard');
 });
 
-Route::get('/tambah-produk', function () {
-    return view('tambah-produk');
-});
-
-Route::get('/edit-produk/{id}', function ($id) {
-    return view('edit-produk', ['id' => $id]);
-});
-
-Route::get('/kategori', function () {
-    return view('kategori');
-});
-
-Route::get('/merek', function () {
-    return view('merek');
-});
-
+// Katalog (Daftar Produk)
 Route::get('/katalog', function () {
     return view('katalog');
 });
 
-Route::get('/laporan-penjualan', function () {
-    return view('laporan-penjualan');
+// Tambah Produk
+Route::get('/tambah-produk', function () {
+    return view('tambah-produk');
 });
 
-Route::get('/detail-produk/{id}', function ($id) {
-    // SIMULASI DATA DARI DATABASE (Nantinya ini diganti dengan pemanggilan Model/Database sungguhan)
-    $produk = (object) [
-        'id' => $id,
-        'nama' => 'Nike Air Max 97',
-        'kategori' => 'Sneakers',
-        'harga' => 2500000,
-        'stok' => 15,
-        'deskripsi' => 'Sepatu kasual bergaya retro modern dengan bantalan udara maksimal untuk kenyamanan sepanjang hari. Cocok untuk digunakan sehari-hari maupun untuk aktivitas ringan.'
-    ];
+// Edit Produk
+Route::get('/edit-produk/{id}', function ($id) {
+    return view('edit-produk', ['id' => $id]);
+});
 
-    // Mengirim variabel $produk ke file detail-produk.blade.php
-    return view('detail-produk', compact('produk'));
+// Detail Produk
+Route::get('/detail-produk/{id}', function ($id) {
+    // Data produk sekarang dimuat melalui API di client-side
+    // Laravel hanya me-render view dan meneruskan ID
+    return view('detail-produk', ['id' => $id]);
+});
+
+// Manajemen Kategori
+Route::get('/kategori', function () {
+    return view('kategori');
+});
+
+// Manajemen Merek
+Route::get('/merek', function () {
+    return view('merek');
+});
+
+// Laporan Riwayat Transaksi
+Route::get('/laporan', function () {
+    return view('laporan');
+});
+
+// Transaksi Stok Baru
+Route::get('/transaksi-baru', function () {
+    return view('transaksi-baru');
 });

@@ -3,11 +3,13 @@ const { getCategories, createCategory, deleteCategory } = require('../controller
 
 const router = express.Router();
 
+// Mengatur route untuk endpoint utama kategori '/api/categories'
 router.route('/')
-  .get(getCategories)
-  .post(createCategory);
+  .get(getCategories)       // GET: Mengambil daftar semua kategori
+  .post(createCategory);    // POST: Menambahkan kategori baru ke dalam database
 
+// Mengatur route untuk endpoint dengan parameter ID '/api/categories/:id'
 router.route('/:id')
-  .delete(deleteCategory);
+  .delete(deleteCategory);  // DELETE: Menghapus kategori berdasarkan ID
 
 module.exports = router;

@@ -38,8 +38,13 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#">
-                        <i class="fa-solid fa-chart-simple me-3"></i> Laporan Penjualan
+                    <a href="{{ url('/transaksi-baru') }}" class="{{ request()->is('transaksi-baru') ? 'active' : '' }}">
+                        <i class="fa-solid fa-cart-flatbed me-3"></i> Transaksi Stok
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('/laporan') }}" class="{{ request()->is('laporan') ? 'active' : '' }}">
+                        <i class="fa-solid fa-chart-simple me-3"></i> Laporan Riwayat
                     </a>
                 </li>
             </ul>
@@ -50,7 +55,7 @@
                 <h5 class="m-0 fw-bold text-dark">Aplikasi > <span class="text-muted">@yield('header_title', 'Dashboard')</span></h5>
                 <div class="d-flex align-items-center">
                     <img src="https://ui-avatars.com/api/?name=Admin&background=1e3a8a&color=fff" alt="User" class="rounded-circle me-2" width="35">
-                    <span class="fw-bold me-4 text-dark">Halo, Admin!</span>
+                    <span class="fw-bold me-4 text-dark" id="navbar-username">Halo, Admin!</span>
                     <a href="#" onclick="logout(); return false;" class="text-danger text-decoration-none fw-bold">
                         <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
                     </a>
@@ -67,32 +72,34 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('js/api-config.js?v=' . time()) }}"></script>
+    <script src="{{ asset('js/helpers.js?v=' . time()) }}"></script>
     <script src="{{ asset('js/script.js?v=' . time()) }}"></script>
     
     <script>
-        // Auth Check
+        // ─── Auth Check ───────────────────────────────────────────
         const token = localStorage.getItem('token');
         const currentPath = window.location.pathname;
         
         if (!token && currentPath !== '/' && currentPath !== '/login') {
-            window.location.href = "{{ url('/') }}"; // Redirect to login
+            window.location.href = "{{ url('/') }}";
         }
 
-        // Set username in navbar if exists
+        // ─── Set username di navbar ───────────────────────────────
         const username = localStorage.getItem('username');
         if (username) {
-            const userElements = document.querySelectorAll('.fw-bold.me-4.text-dark');
-            userElements.forEach(el => el.innerText = 'Halo, ' + username + '!');
+            const usernameEl = document.getElementById('navbar-username');
+            if (usernameEl) usernameEl.innerText = 'Halo, ' + username + '!';
         }
 
-        // Logout logic
+        // ─── Logout ──────────────────────────────────────────────
         function logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('username');
             window.location.href = "{{ url('/') }}";
         }
 
-        // Helper function for API calls with token
+        // ─── API Helper dengan Auth Token ─────────────────────────
         window.fetchWithAuth = function(url, options = {}) {
             const headers = new Headers(options.headers || {});
             headers.append('Authorization', 'Bearer ' + token);
@@ -103,7 +110,7 @@
                 headers: headers
             }).then(response => {
                 if (response.status === 401) {
-                    logout(); // Token expired or invalid
+                    logout();
                     throw new Error('Sesi berakhir, silakan login kembali.');
                 }
                 return response;

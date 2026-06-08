@@ -7,6 +7,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/login.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('js/api-config.js?v=' . time()) }}"></script>
+    <script src="{{ asset('js/helpers.js?v=' . time()) }}"></script>
 </head>
 <body>
 
@@ -32,7 +35,11 @@
                     <input type="password" id="password" class="form-control" placeholder="******" required>
                 </div>
             </div>
-            <button type="submit" id="btn-login" class="btn btn-primary w-100 fw-bold py-2">MASUK</button>
+            <button type="submit" id="btn-login" class="btn btn-primary w-100 fw-bold py-2 mb-3">MASUK</button>
+            <div class="text-center">
+                <span class="text-muted">Belum punya akun? </span>
+                <a href="{{ url('/register') }}" class="text-decoration-none fw-bold">Daftar sekarang</a>
+            </div>
             <div id="login-error" class="text-danger text-center mt-3 d-none fw-bold"></div>
         </form>
     </div>
@@ -44,8 +51,7 @@
             const btnLogin = document.getElementById('btn-login');
             const errorDiv = document.getElementById('login-error');
             
-            btnLogin.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
-            btnLogin.disabled = true;
+            setButtonLoading(btnLogin, true);
             errorDiv.classList.add('d-none');
 
             const payload = {
@@ -53,7 +59,7 @@
                 password: document.getElementById('password').value
             };
 
-            fetch('http://localhost:5000/api/auth/login', {
+            fetch(API_ENDPOINTS.login, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -72,8 +78,7 @@
             .catch(error => {
                 errorDiv.innerText = error.message;
                 errorDiv.classList.remove('d-none');
-                btnLogin.innerHTML = 'MASUK';
-                btnLogin.disabled = false;
+                setButtonLoading(btnLogin, false, 'MASUK');
             });
         });
     </script>

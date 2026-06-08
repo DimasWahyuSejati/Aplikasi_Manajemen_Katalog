@@ -1,16 +1,16 @@
 @extends('layouts.app')
-@section('title', 'Edit Data Sepatu')
+@section('title', 'Edit Sepatu')
 @section('header_title', 'Edit Katalog Produk')
 
 @section('content')
     <div class="card shadow-sm border-0 mx-auto" style="max-width: 800px;">
-        <div class="card-header bg-warning text-dark py-3 d-flex justify-content-between align-items-center">
-            <h5 class="m-0 fw-bold"><i class="fa-solid fa-pen me-2"></i> Form Edit Sepatu</h5>
-            <a href="{{ url('/detail-produk/'.$id) }}" class="btn btn-sm btn-light fw-bold">
+        <div class="card-header bg-primary text-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="m-0 fw-bold">Form Edit Sepatu</h5>
+            <a href="{{ url('/katalog') }}" class="btn btn-sm btn-light fw-bold">
                 <i class="fa-solid fa-arrow-left me-1"></i> Kembali
             </a>
         </div>
-        <div class="card-body p-4">
+        <div class="card-body p-4" id="form-container" style="display: none;">
             <form id="form-edit-produk">
                 <div class="row mb-3">
                     <div class="col-md-6">
@@ -19,17 +19,13 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Merek</label>
-                        <select id="input-merek" class="form-select" required>
-                            <option disabled value="">Pilih Merek</option>
-                        </select>
+                        <select id="input-merek" class="form-select" required></select>
                     </div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Kategori</label>
-                        <select id="input-kategori" class="form-select" required>
-                            <option disabled value="">Pilih Kategori</option>
-                        </select>
+                        <select id="input-kategori" class="form-select" required></select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Harga (Rp)</label>
@@ -49,18 +45,24 @@
                     </div>
                     <div class="col-12">
                         <label class="form-label fw-bold">Link Gambar Sepatu (Opsional)</label>
-                        <input type="url" id="input-gambar" class="form-control" placeholder="Contoh: https://example.com/gambar-sepatu.jpg">
+                        <input type="url" id="input-gambar" class="form-control">
                     </div>
                 </div>
 
                 <hr>
                 <div class="d-flex justify-content-end">
-                    <a href="{{ url('/detail-produk/'.$id) }}" class="btn btn-secondary me-2 fw-bold">Batal</a>
-                    <button type="submit" id="btn-submit" class="btn btn-warning fw-bold">
-                        <i class="fa-solid fa-save me-1"></i> Update Data
+                    <a href="{{ url('/katalog') }}" class="btn btn-secondary me-2 fw-bold">Batal</a>
+                    <button type="submit" id="btn-submit" class="btn btn-primary fw-bold">
+                        <i class="fa-solid fa-save me-1"></i> Simpan Perubahan
                     </button>
                 </div>
             </form>
+        </div>
+        <div class="card-body p-5 text-center" id="loading-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Memuat data produk...</p>
         </div>
     </div>
 @endsection
@@ -68,149 +70,59 @@
 @section('scripts')
 <script>
 const productId = {{ $id }};
+let existingProduct = null;
+let allSizes = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Load categories and brands in parallel, then load product data
+    // Fetch data yang dibutuhkan secara paralel
     Promise.all([
-        fetchWithAuth('http://localhost:5000/api/categories').then(res => res.json()),
-        fetchWithAuth('http://localhost:5000/api/brands').then(res => res.json()),
-        fetchWithAuth('http://localhost:5000/api/sizes').then(res => res.json())
+        fetchWithAuth(API_ENDPOINTS.categories).then(res => res.json()),
+        fetchWithAuth(API_ENDPOINTS.brands).then(res => res.json()),
+        fetchWithAuth(API_ENDPOINTS.sizes).then(res => res.json()),
+        fetchWithAuth(API_ENDPOINTS.catalogById(productId)).then(res => {
+            if (!res.ok) throw new Error('Produk tidak ditemukan');
+            return res.json();
+        })
     ])
-    .then(([categories, brands, sizes]) => {
-        // Populate categories
-        const kategoriSelect = document.getElementById('input-kategori');
-        kategoriSelect.innerHTML = '<option disabled value="">Pilih Kategori</option>';
-        categories.forEach(cat => {
-            const option = document.createElement('option');
-            option.value = cat.name;
-            option.textContent = cat.name;
-            kategoriSelect.appendChild(option);
-        });
+    .then(([categories, brands, sizes, product]) => {
+        existingProduct = product;
+        allSizes = sizes;
 
-        // Populate brands
-        const merekSelect = document.getElementById('input-merek');
-        merekSelect.innerHTML = '<option disabled value="">Pilih Merek</option>';
-        brands.forEach(brand => {
-            const option = document.createElement('option');
-            option.value = brand.name;
-            option.textContent = brand.name;
-            merekSelect.appendChild(option);
-        });
-
-        // Render Sizes Grid
-        const container = document.getElementById('sizes-container');
-        container.innerHTML = '';
-        sizes.forEach(size => {
-            const div = document.createElement('div');
-            div.className = 'col-md-3 col-sm-4 col-6';
-            div.innerHTML = `
-                <div class="form-check mb-2">
-                    <input class="form-check-input size-checkbox" type="checkbox" value="${size.id}" id="size-${size.id}" data-size="${size.size_value}">
-                    <label class="form-check-label fw-bold" for="size-${size.id}">
-                        Ukuran ${size.size_value}
-                    </label>
-                </div>
-                <input type="number" class="form-control form-control-sm size-stock-input d-none" id="stock-${size.id}" placeholder="Stok" min="0">
-            `;
-            container.appendChild(div);
-
-            const checkbox = document.getElementById(`size-${size.id}`);
-            const stockInput = document.getElementById(`stock-${size.id}`);
-            checkbox.addEventListener('change', function() {
-                if (this.checked) {
-                    stockInput.classList.remove('d-none');
-                    stockInput.required = true;
-                } else {
-                    stockInput.classList.add('d-none');
-                    stockInput.required = false;
-                    stockInput.value = '';
-                }
-            });
-        });
-
-        return fetchWithAuth('http://localhost:5000/api/catalog/' + productId);
-    })
-    .then(response => {
-        if(!response.ok) throw new Error('Data tidak ditemukan');
-        return response.json();
-    })
-    .then(data => {
-        document.getElementById('input-nama').value = data.name;
-
-        // Set brand
-        const merekSelect = document.getElementById('input-merek');
-        let brandExists = false;
-        for (let i = 0; i < merekSelect.options.length; i++) {
-            if (merekSelect.options[i].value === data.brand) {
-                brandExists = true;
-                break;
-            }
-        }
-        if (!brandExists && data.brand) {
-            const newOption = new Option(data.brand, data.brand);
-            merekSelect.add(newOption);
-        }
-        merekSelect.value = data.brand || '';
-
-        // Set category
-        const kategoriSelect = document.getElementById('input-kategori');
-        let optionExists = false;
-        for (let i = 0; i < kategoriSelect.options.length; i++) {
-            if (kategoriSelect.options[i].value === data.category) {
-                optionExists = true;
-                break;
-            }
-        }
-        if (!optionExists && data.category) {
-            const newOption = new Option(data.category, data.category);
-            kategoriSelect.add(newOption);
-        }
-        kategoriSelect.value = data.category;
+        // Populate dropdowns using helper
+        populateSelect(document.getElementById('input-kategori'), categories, 'name', 'name', 'Pilih Kategori');
+        populateSelect(document.getElementById('input-merek'), brands, 'name', 'name', 'Pilih Merek');
         
-        document.getElementById('input-harga').value = data.price;
-        document.getElementById('input-gambar').value = data.imageUrl || '';
+        // Render checkboxes with pre-filled variants using helper
+        renderSizeCheckboxes(document.getElementById('sizes-container'), sizes, product.variants);
 
-        // Pre-fill variants
-        if (data.variants && Array.isArray(data.variants)) {
-            data.variants.forEach(variant => {
-                const checkbox = document.getElementById(`size-${variant.size_id}`);
-                const stockInput = document.getElementById(`stock-${variant.size_id}`);
-                if (checkbox && stockInput) {
-                    checkbox.checked = true;
-                    stockInput.value = variant.stock;
-                    stockInput.classList.remove('d-none');
-                    stockInput.required = true;
-                }
-            });
-        }
+        // Pre-fill form fields
+        document.getElementById('input-nama').value = product.name;
+        document.getElementById('input-merek').value = product.brand || '';
+        document.getElementById('input-kategori').value = product.category || '';
+        document.getElementById('input-harga').value = product.price;
+        document.getElementById('input-gambar').value = product.imageUrl || '';
+
+        document.getElementById('loading-container').style.display = 'none';
+        document.getElementById('form-container').style.display = 'block';
     })
     .catch(error => {
-        alert('Gagal memuat data produk: ' + error.message);
+        document.getElementById('loading-container').innerHTML = 
+            `<h5 class="text-danger">Gagal memuat data: ${error.message}</h5>
+             <a href="/katalog" class="btn btn-primary mt-3">Kembali ke Katalog</a>`;
     });
 });
 
+// ─── Form Submit ──────────────────────────────────────────────────
 document.getElementById('form-edit-produk').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const btnSubmit = document.getElementById('btn-submit');
-    const originalText = btnSubmit.innerHTML;
-    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Mengupdate...';
-    btnSubmit.disabled = true;
+    setButtonLoading(btnSubmit, true);
 
-    const variants = [];
-    document.querySelectorAll('.size-checkbox:checked').forEach(checkbox => {
-        const sizeId = checkbox.value;
-        const stock = document.getElementById(`stock-${sizeId}`).value;
-        variants.push({
-            size_id: parseInt(sizeId),
-            stock: parseInt(stock)
-        });
-    });
-
+    const variants = collectVariantsFromCheckboxes();
     if (variants.length === 0) {
         alert('Pilih setidaknya satu ukuran dan masukkan stok.');
-        btnSubmit.innerHTML = originalText;
-        btnSubmit.disabled = false;
+        setButtonLoading(btnSubmit, false, '<i class="fa-solid fa-save me-1"></i> Simpan Perubahan');
         return;
     }
 
@@ -223,45 +135,20 @@ document.getElementById('form-edit-produk').addEventListener('submit', function(
         variants: variants
     };
 
-    fetchWithAuth('http://localhost:5000/api/catalog/' + productId, {
-        method: 'PUT',
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Gagal mengupdate data ke backend.');
-        }
-        return response.json();
-    })
-    .then(result => {
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: 'Data sepatu berhasil diupdate.',
-                confirmButtonText: 'Ke Detail'
-            }).then(() => {
-                window.location.href = "{{ url('/detail-produk') }}/" + productId;
+    fetchWithAuth(API_ENDPOINTS.catalogById(productId), { method: 'PUT', body: JSON.stringify(data) })
+        .then(response => {
+            if (!response.ok) throw new Error('Gagal mengupdate data.');
+            return response.json();
+        })
+        .then(() => {
+            showSuccess('Tersimpan!', 'Data sepatu berhasil diperbarui.', () => {
+                window.location.href = `/detail-produk/${productId}`;
             });
-        } else {
-            alert('Berhasil mengupdate data!');
-            window.location.href = "{{ url('/detail-produk') }}/" + productId;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
-                text: 'Terjadi kesalahan: ' + error.message,
-            });
-        } else {
-            alert('Terjadi kesalahan: ' + error.message);
-        }
-        btnSubmit.innerHTML = originalText;
-        btnSubmit.disabled = false;
-    });
+        })
+        .catch(error => {
+            showError('Terjadi kesalahan: ' + error.message);
+            setButtonLoading(btnSubmit, false, '<i class="fa-solid fa-save me-1"></i> Simpan Perubahan');
+        });
 });
 </script>
 @endsection

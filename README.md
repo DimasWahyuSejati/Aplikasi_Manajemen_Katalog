@@ -1,59 +1,182 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Aplikasi Manajemen Katalog Toko Sepatu
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi web untuk manajemen katalog produk toko sepatu dengan fitur CRUD produk, kategori, merek, dan autentikasi. Proyek ini dibangun dengan arsitektur terpisah antara *Backend* (API) dan *Frontend* (UI).
 
-## About Laravel
+## Arsitektur & Teknologi
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Komponen | Peran | Teknologi Utama | Port Default |
+|---|---|---|---|
+| **Backend** | Menyediakan REST API dan mengelola database | Node.js, Express.js, Sequelize ORM, MySQL | `5000` |
+| **Frontend** | Antarmuka pengguna (UI) yang dirender di server | PHP, Laravel (Blade), Bootstrap 5, Vanilla JS | `8000` |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Cara Menjalankan Aplikasi
 
-## Learning Laravel
+Karena aplikasi ini terdiri dari dua layanan terpisah, Anda harus menjalankan keduanya secara bersamaan di terminal yang berbeda.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Prasyarat
+1. **Node.js** (v14 atau lebih baru)
+2. **PHP** (v8.2 atau lebih baru)
+3. **Composer**
+4. **MySQL Server** (XAMPP, Laragon, dll.)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 1. Konfigurasi Database (Backend)
+1. Buka aplikasi MySQL (misal: phpMyAdmin).
+2. Buat database baru bernama `katalog_sepatu` (atau nama lain sesuai pilihan Anda).
+3. Duplikat/buat file `.env` di dalam folder `backend/` dan sesuaikan kredensialnya:
+   ```env
+   PORT=5000
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=
+   DB_NAME=katalog_sepatu
+   DB_DIALECT=mysql
+   JWT_SECRET=rahasia_jwt_super_aman_123
+   ```
 
-## Laravel Sponsors
+### 2. Menjalankan Backend (Terminal 1)
+Buka terminal baru, lalu jalankan perintah berikut:
+```bash
+cd backend
+npm install
+npm run dev
+```
+> **Catatan:** Saat pertama kali dijalankan, Sequelize akan otomatis membuat tabel di database dan mengisi data *dummy* (ukuran sepatu, kategori awal, dan akun admin default). Server akan berjalan di `http://localhost:5000`.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 3. Menjalankan Frontend (Terminal 2)
+Buka terminal baru lainnya, lalu jalankan perintah berikut:
+```bash
+cd frontend
+composer install
+npm install
+php artisan serve
+```
+> **Catatan:** Frontend akan berjalan di `http://localhost:8000`. Buka alamat tersebut di browser Anda. Akun login default (jika belum diubah) adalah username: `admin`, password: `password123`.
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Struktur Folder & Penjelasan File
 
-## Contributing
+Aplikasi ini dibagi menjadi dua folder utama di direktori root: `backend/` dan `frontend/`.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 📁 `backend/` (Express.js API)
+Folder ini berisi seluruh logika server, manipulasi database, dan penyediaan rute API.
 
-## Code of Conduct
+- **`config/`**
+  - `db.js`: Konfigurasi koneksi database MySQL menggunakan Sequelize ORM.
+- **`controllers/`** *(Logika Bisnis)*
+  - `authController.js`: Menangani proses login dan registrasi (JWT token).
+  - `brandController.js`: Menangani operasi CRUD untuk data Merek (Brand).
+  - `catalogController.js`: Menangani operasi CRUD kompleks untuk Produk Sepatu (termasuk variasi ukuran dan stok).
+  - `categoryController.js`: Menangani operasi CRUD untuk data Kategori.
+  - `sizeController.js`: Menyediakan daftar ukuran sepatu yang valid.
+- **`helpers/`** *(Fungsi Bantuan)*
+  - `productHelper.js`: Berisi fungsi terpusat untuk menghitung stok total sepatu berdasarkan variannya dan membuat query include standar, untuk menghindari duplikasi kode antar controller.
+- **`middleware/`**
+  - `authMiddleware.js`: Memvalidasi token JWT untuk memproteksi rute yang bersifat rahasia (harus login).
+  - `errorHandler.js`: Penanganan error terpusat (Centralized Error Handling) yang menangkap *exception* dan mengembalikan respon JSON yang rapi.
+- **`models/`** *(Skema Database)*
+  - `Brand.js`, `Category.js`, `Product.js`, `ProductVariant.js`, `Size.js`, `User.js`: Definisi skema tabel database Sequelize.
+  - `associations.js`: Tempat terpusat untuk mendefinisikan hubungan antar tabel (misal: *Product hasMany ProductVariant*).
+- **`routes/`**
+  - Kumpulan file (seperti `catalogRoutes.js`) yang memetakan URL endpoint API ke fungsi di dalam *controllers*.
+- **`seeders/`**
+  - `seeder.js`: Skrip otomatis yang memasukkan data awal (ukuran sepatu EU, kategori default, akun admin) saat server pertama kali dinyalakan.
+- **`index.js`**
+  - File utama (Entry Point) dari aplikasi backend. Berfungsi menjalankan server Express, mendaftarkan *middleware*, me-*load* *routes*, dan menyambungkan ke database.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 📁 `frontend/` (Laravel UI)
+Folder ini berisi antarmuka pengguna berbasis web yang mengkonsumsi API dari backend.
 
-## Security Vulnerabilities
+- **`app/`, `bootstrap/`, `config/`, `database/`, `storage/`, dll.**
+  - Folder bawaan standar dari framework Laravel.
+- **`routes/`**
+  - `web.php`: Mendefinisikan URL halaman web (seperti `/dashboard`, `/katalog`) dan mengarahkannya ke file tampilan (view) yang sesuai. Tidak berisi logika pengolahan data karena semua data ditarik dari API menggunakan JavaScript di sisi klien.
+- **`resources/views/`** *(Tampilan HTML/Blade)*
+  - `layouts/app.blade.php`: *Template/kerangka* utama web yang memuat sidebar, header (navbar), dan *scripts* bawaan (Bootstrap, SweetAlert). Halaman lain akan dimasukkan ke dalam kerangka ini.
+  - `login.blade.php`: Halaman login awal.
+  - `dashboard.blade.php`: Halaman ringkasan statistik dan daftar produk cepat.
+  - `katalog.blade.php`: Halaman utama untuk melihat produk sepatu dengan fitur pencarian, filter (kategori, merek, ukuran), dan pengurutan (harga, stok).
+  - `kategori.blade.php` & `merek.blade.php`: Halaman untuk mengelola data master kategori dan merek.
+  - `tambah-produk.blade.php` & `edit-produk.blade.php`: Formulir input data sepatu beserta konfigurasi stok per ukuran.
+  - `detail-produk.blade.php`: Halaman rincian spesifik dari satu pasang sepatu.
+- **`public/`** *(Aset Statis & Skrip Klien)*
+  - **`css/`**: Berisi file CSS kustom untuk memberikan gaya (styling) tambahan di luar Bootstrap.
+  - **`js/`** *(Logika Sisi Klien / Frontend)*
+    - `api-config.js`: File sentral untuk menyimpan *Base URL API* (`http://localhost:5000`). Jika backend pindah server/port, cukup ubah di satu file ini.
+    - `helpers.js`: Kumpulan fungsi JavaScript yang dipakai berulang di berbagai halaman, seperti `formatCurrency` (format rupiah), merender *badge* stok sepatu, menampilkan *SweetAlert*, dan logika dropdown.
+    - `script.js`: Berisi logika global atau event listener.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## Fitur Utama
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- 🔐 **Autentikasi JWT**: Login aman berbasis token yang disimpan di `localStorage` peramban.
+- 📦 **CRUD Produk Majemuk**: Manajemen data sepatu tidak sekadar nama/harga, namun mendukung variasi ukuran sepatu (EU 36-45) lengkap dengan perhitungan stok independen di tiap ukurannya.
+- 🏷️ **Data Master Terpisah**: Pengelolaan Kategori dan Merek sebagai entitas terpisah untuk kemudahan klasifikasi data.
+- 🔍 **Filter & Pencarian Dinamis**: Halaman katalog yang interaktif untuk memfilter pencarian berdasarkan ukuran, merek, kategori, dan *sorting* secara *real-time* di sisi klien.
+- 🎨 **UI Modern & Bersih**: Menggunakan Bootstrap 5, ikon FontAwesome, dialog interaktif SweetAlert2, dan gaya visual (CSS) kustom yang elegan.
+
+---
+
+## Panduan Testing API (Postman / Thunder Client)
+
+Aplikasi ini menggunakan arsitektur REST API. Untuk menguji atau mencoba API langsung (tanpa melalui frontend Laravel), Anda bisa menggunakan *tools* seperti **Postman** atau **Thunder Client** (ekstensi VS Code).
+
+### Metode HTTP yang Digunakan
+- `GET`: Untuk mengambil atau membaca data (contoh: daftar produk, laporan).
+- `POST`: Untuk membuat atau menambahkan data baru (contoh: login, tambah kategori).
+- `PUT`: Untuk memperbarui data yang sudah ada secara keseluruhan (contoh: edit produk).
+- `DELETE`: Untuk menghapus data (contoh: hapus merek).
+
+### Autentikasi (JWT)
+Hampir seluruh rute (selain login/register dan get katalog publik) dilindungi oleh JWT (JSON Web Token).
+Jika Anda mendapat respon `401 Unauthorized`, ikuti langkah berikut:
+1. Lakukan permintaan `POST` ke `/api/auth/login` untuk mendapatkan `token`.
+2. Pada *tab* **Headers** di Postman/Thunder Client, tambahkan:
+   - Key: `Authorization`
+   - Value: `Bearer <token_yang_didapat>`
+
+### Contoh Permintaan (Requests)
+
+#### 1. Login (Mendapatkan Token)
+- **Method**: `POST`
+- **URL**: `http://localhost:5000/api/auth/login`
+- **Body** (JSON):
+  ```json
+  {
+    "username": "admin",
+    "password": "password123"
+  }
+  ```
+
+#### 2. Menambahkan Kategori Baru
+- **Method**: `POST`
+- **URL**: `http://localhost:5000/api/categories`
+- **Headers**: `Authorization: Bearer <token>`
+- **Body** (JSON):
+  ```json
+  {
+    "name": "Sneakers"
+  }
+  ```
+
+#### 3. Mengambil Semua Katalog Produk
+- **Method**: `GET`
+- **URL**: `http://localhost:5000/api/catalog`
+- *(Bisa diakses tanpa token pada konfigurasi saat ini untuk etalase publik)*
+
+#### 4. Mencatat Transaksi Keluar (Penjualan)
+- **Method**: `POST`
+- **URL**: `http://localhost:5000/api/transactions`
+- **Headers**: `Authorization: Bearer <token>`
+- **Body** (JSON):
+  ```json
+  {
+    "product_variant_id": 1,
+    "type": "OUT",
+    "quantity": 2,
+    "reason": "Terjual via toko offline"
+  }
+  ```
