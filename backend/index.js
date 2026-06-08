@@ -48,15 +48,22 @@ app.use(errorHandler);
 // ─── Start Server ─────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(async () => {
-  await sequelize.sync({ alter: true });
-  console.log('Database synchronized');
+if (process.env.NODE_ENV !== 'production') {
+  connectDB().then(async () => {
+    await sequelize.sync({ alter: true });
+    console.log('Database synchronized');
 
-  await seedAll();
+    await seedAll();
 
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  }).catch((err) => {
+    console.error('Failed to start server:', err);
   });
-}).catch((err) => {
-  console.error('Failed to start server:', err);
-});
+} else {
+  // Untuk Vercel (Production), hindari sinkronisasi berat saat cold start
+  connectDB();
+}
+
+module.exports = app;
