@@ -1,8 +1,10 @@
 /**
  * Konfigurasi API terpusat.
- * Ubah API_BASE_URL di sini saja jika backend berpindah alamat.
+ * Otomatis mendeteksi apakah sedang berjalan di server lokal (localhost) atau Vercel.
  */
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000/api' 
+  : 'https://katalog-backend.vercel.app/api';
 
 /**
  * Mapping semua API endpoint.
