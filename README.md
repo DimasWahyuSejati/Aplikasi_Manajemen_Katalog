@@ -1,8 +1,11 @@
 
 kelompok Manajemen Katalog Produk
 Anggota Kelompok:
+
 Dimas Wahyu Sejati (5230411260) 
+
 Rizki Dimas Sasongko (5230411263) 
+
 La Ode Muhammad Fazle Rabbani Ahsan (5230411346) 
 
 # Aplikasi Manajemen Katalog Toko Sepatu
