@@ -1,3 +1,10 @@
+
+kelompok Manajemen Katalog Produk
+Anggota Kelompok:
+Dimas Wahyu Sejati (5230411260) 
+Rizki Dimas Sasongko (5230411263) 
+Ahsan 
+
 # Aplikasi Manajemen Katalog Toko Sepatu
 
 Aplikasi web untuk manajemen katalog produk toko sepatu dengan fitur CRUD produk, kategori, merek, dan autentikasi. Proyek ini dibangun dengan arsitektur terpisah antara *Backend* (API) dan *Frontend* (UI).
